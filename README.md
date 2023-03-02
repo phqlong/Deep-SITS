@@ -1,7 +1,7 @@
 Deep SITS
 ==============================
 
-A new awesome project.
+Deep Learning approaches for Rice Yield Prediction on Satellite Imagery Time Series Data.
 
 Project Organization
 ------------
