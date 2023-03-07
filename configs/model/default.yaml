@@ -3,8 +3,8 @@ _target_: src.models.SITSLitModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.001
-  weight_decay: 0.01
+  lr: 0.01
+  weight_decay: 0.0
 
 scheduler:
   _target_: torch.optim.lr_scheduler.ReduceLROnPlateau
@@ -14,10 +14,11 @@ scheduler:
   patience: 10
 
 model:
-  _target_: src.models.components.CNN_3D.CNN_3D
-  num_features: 6
-  hidden_channel: 64
-  kernel_size: 3
-  hidden_size1: 128 
-  hidden_size2: 64 
-  num_layers: 1 
+  _target_: src.models.components.TSViT.TSViT
+  # num_features: 6
+  # hidden_channel: 32
+  # kernel_size: 3
+  # hidden_size1: 32
+  # hidden_size2: 32
+  # num_layers: 3
+  # dropout: 0.1

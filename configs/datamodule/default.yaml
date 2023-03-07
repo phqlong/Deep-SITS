@@ -7,6 +7,6 @@ data_train_path2: ${paths.data_dir}/train_sentinel1_normalized2.nc
 data_test_path: ${paths.data_dir}/test_sentinel1_normalized2.nc
 train_val_test_split: [0.9, 0.05, 0.05]
 bands: ["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"]
-batch_size: 32
+batch_size: 128
 num_workers: 0
 pin_memory: False
