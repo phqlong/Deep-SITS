@@ -18,18 +18,32 @@ class CNN_3D(nn.Module):
         
         # 2D Convolutional layers for spacial
         self.conv1 = nn.Sequential(
-            nn.Conv2d(in_channels=num_features, out_channels=64, kernel_size=3, padding=1),
-            nn.Conv2d(64, 3, 1, stride=1, padding=0)
-        )
+            nn.Conv2d(in_channels=num_features, out_channels=64, kernel_size=3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm2d(64, momentum=1, affine=True),
+
+            nn.Conv2d(64, 32, 3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm2d(32, momentum=1, affine=True),
+       )
         
         # 3D Convolutional layers for both temperio spacial
         self.conv2 = nn.Sequential(
-            nn.Conv3d(3, 64, 3, stride=1, padding=1),
+            nn.Conv3d(32, 64, 3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
             nn.MaxPool3d(kernel_size=(1,2,2), stride=(1,2,2)),
+            nn.BatchNorm3d(64, momentum=1, affine=True),
+
             nn.Conv3d(64, 128, 3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
             nn.MaxPool3d(kernel_size=2, stride=2),
+            nn.BatchNorm3d(128, momentum=1, affine=True),
+
             nn.Conv3d(128, 256, 3, stride=1, padding=1),
+            nn.ReLU(inplace=True),
+            nn.BatchNorm3d(256, momentum=1, affine=True),
             nn.Conv3d(256, 256, 3, stride=1, padding=0),
+            nn.ReLU(inplace=True),
             nn.MaxPool3d(kernel_size=2, stride=2),
             # nn.Conv3d(256, 512, 3, stride=1, padding=0),
             # nn.Conv3d(512, 512, 3, stride=1, padding=0),
@@ -54,7 +68,7 @@ class CNN_3D(nn.Module):
         x = torch.stack(x)
 
         # Reshape input for 3D Conv
-        x = x.view(B, 3, T, W, H)
+        x = x.view(B, 32, T, W, H)
 
         # 3D Convolutional layers
         x = self.conv2(x)
