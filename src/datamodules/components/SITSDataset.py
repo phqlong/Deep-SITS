@@ -34,9 +34,9 @@ def read_xds(crop, path):
 
 def preprocess_xds(xds, bands=["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"]):
     # Check type bands
-    assert type(bands) == list
-    assert type(bands[0]) == str
-
+    # assert type(bands) == list
+    # assert type(bands[0]) == str
+    bands=["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"]
     # Select bands
     xds = xds[bands]
 
@@ -53,13 +53,17 @@ def preprocess_xds(xds, bands=["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"
     data[mask] = np.median(data, axis=(0,1,2,3))
 
     data = torch.tensor(data, dtype=torch.float32)
-    return data
+
+    time = xds.time.dt.dayofyear.to_numpy()
+    time = torch.Tensor(time).int()
+
+    return {'data': data, 'time': time}
 
 
 class SITSDataset(Dataset):
     def __init__(self, crop_yield_data, path1, path2, train=True, target_variable='RiceYield', bands=["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"]):
         self.train = train
-        self.bands = bands
+        self.bands = bands if type(bands) == list else list(bands)
         self.data, self.targets = self._load_data(crop_yield_data, path1, path2, target_variable, bands)
 
     def __getitem__(self, index):
