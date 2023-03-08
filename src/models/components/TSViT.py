@@ -35,14 +35,14 @@ class TSViT(nn.Module):
     def __init__(self):
         super().__init__()
 
+        self.num_channels = 6
         self.hidden_dim = 128
-        self.temporal_depth = 10
+        self.temporal_depth = 12
         self.heads = 3
         self.dim_head = 64
         self.scale_dim = 2
         self.dropout = 0.1
 
-        self.num_channels = 6
         self.embedding = nn.Sequential(
             MeanDimReduction(dims=[3, 4]),
             Rearrange('B C T -> B T C'),
@@ -66,7 +66,7 @@ class TSViT(nn.Module):
         # Fully connected layers
         self.fc = nn.Sequential(
             nn.Dropout(p=self.dropout),
-            nn.LayerNorm(self.hidden_dim),
+            # nn.LayerNorm(self.hidden_dim),
             nn.Linear(self.hidden_dim, 1),
             # nn.ReLU(inplace=True),
             # nn.Dropout(p=self.dropout),
