@@ -16,3 +16,6 @@ tags: ["dev"]
 
 # passing checkpoint path is necessary for evaluation
 ckpt_path: logs/train/runs/2023-03-08_12-59-16/checkpoints/epoch_086.ckpt
+
+template_file_path: data/Challenge_2_submission_template.csv
+submission_dir: "output"
