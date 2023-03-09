@@ -53,6 +53,9 @@ class SITSLitModule(LightningModule):
 
     def model_step(self, batch: Any):
         x, y = batch
+        # x1 = x['sentinel1'] 
+        # x2 = x['sentinel2'] 
+
         preds = self.forward(x)
         loss = self.criterion(preds, y.float())
         r2 = self.r2_score(preds, y.float())
@@ -100,6 +103,11 @@ class SITSLitModule(LightningModule):
     def test_epoch_end(self, outputs: List[Any]):
         self.test_loss.reset()
         self.test_r2.reset()
+
+    def predict_step(self, batch: Any, batch_idx: int):
+        x, y = batch
+        preds = self.forward(x)
+        return preds
 
     def configure_optimizers(self):
         """Choose what optimizers and learning-rate schedulers to use in your optimization.
