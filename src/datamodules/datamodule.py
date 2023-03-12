@@ -42,15 +42,26 @@ class SITSDataModule(LightningDataModule):
         self,
         data_dir: str = "data/",
         metadata_train_path: str = "data/Crop_Yield_Data_challenge_2.csv",
-        metadata_test_path: str = "data/Challenge_2_submission_template.csv",
-        data_train_path1: str = "data/train_sentinel1_normalized1.nc",
-        data_train_path2: str = "data/train_sentinel1_normalized2.nc",
-        data_test_path: str = "data/test_sentinel1_normalized2.nc",
-        train_dataset_path: str = "data/train_dataset.pt",
-        val_dataset_path: str = "data/val_dataset.pt",
-        test_dataset_path: str = "data/test_dataset.pt",
+        metadata_inference_path: str = "data/Challenge_2_submission_template.csv",
+
+        train_s1_path1: str = "data/updated/train_sentinel1_16px1.nc",
+        train_s1_path2: str = "data/updated/train_sentinel1_16px2.nc",  
+        train_s2_path: str = "data/updated/train_sentinel2_16px.nc", 
+
+        infer_s1_path1: str = "data/updated/test_sentinel1_16px1.nc",
+        infer_s1_path2: str = "data/updated/test_sentinel1_16px2.nc",
+        infer_s2_path: str = "data/updated/test_sentinel2_16px.nc",
+
+        train_dataset_path: str = "data/dataset/train_dataset.pt",
+        val_dataset_path: str = "data/dataset/val_dataset.pt",
+        test_dataset_path: str = "data/dataset/test_dataset.pt",
+        infer_dataset_path: str = "data/dataset/infer_dataset.pt",
+
+        target_variable: str = 'RiceYield',
+        s1_bands: list = ['vv', 'vh', 'vv_by_vh', 'vv_add_vh', 'DOP', 'RVI'],
+        s2_bands: list = ['NDVI', 'EVI', 'SAVI', 'NDWI', 'MSI', 'CARI'],
+
         train_val_test_split: Tuple[float, float, float] = (0.9, 0.05, 0.05),
-        bands: list = ["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"],
         batch_size: int = 32,
         num_workers: int = 2,
         pin_memory: bool = False,
@@ -67,39 +78,53 @@ class SITSDataModule(LightningDataModule):
         self.data_train: Optional[Dataset] = None
         self.data_val: Optional[Dataset] = None
         self.data_test: Optional[Dataset] = None
+        self.data_infer: Optional[Dataset] = None
 
     def prepare_data(self):
         """
         Download data if needed and save for setup.
         Do not use it to assign state (self.x = y).
         """
-        metadata_train = self.read_metadata(self.hparams.metadata_train_path)
-        metadata_test = self.read_metadata(self.hparams.metadata_test_path, train=False)
 
         # load and split datasets only if not loaded already
         if not os.path.exists(self.hparams.train_dataset_path) and not os.path.exists(self.hparams.val_dataset_path) and not os.path.exists(self.hparams.test_dataset_path):
-            # Split crop_yield_data into train, val, test b KFold
-            data_train, data_val, data_test = self.split_dataset(metadata_train)
+            # Load metadata Crop Yield Data
+            metadata_train = self.read_metadata(self.hparams.metadata_train_path)
 
-            # Load datasets from netcdf files
-            train_ds = SITSDataset(crop_yield_data=data_train, 
-                                          path1=self.hparams.data_train_path1,
-                                          path2=self.hparams.data_train_path2,
-                                          bands=self.hparams.bands)
-            val_ds = SITSDataset(crop_yield_data=data_val, 
-                                          path1=self.hparams.data_train_path1,
-                                          path2=self.hparams.data_train_path2,
-                                          bands=self.hparams.bands)
-            test_ds = SITSDataset(crop_yield_data=data_test, 
-                                          path1=self.hparams.data_train_path1,
-                                          path2=self.hparams.data_train_path2,
-                                          bands=self.hparams.bands)
+            # Split crop_yield_data into train, val, test b KFold
+            ds_list = []
+            for crop_yield_data in self.split_dataset(metadata_train):
+                # Load datasets from netcdf files
+                ds = SITSDataset(crop_yield_data=crop_yield_data, 
+                                s1_path1=self.hparams.train_s1_path1, 
+                                s1_path2=self.hparams.train_s1_path2,
+                                s2_path=self.hparams.train_s2_path,
+                                target_variable=self.hparams.target_variable,
+                                s1_bands=self.hparams.s1_bands,
+                                s2_bands=self.hparams.s2_bands)
+                ds_list.append(ds)
 
             # Save datasets
-            torch.save(train_ds, self.hparams.train_dataset_path)
-            torch.save(val_ds, self.hparams.val_dataset_path)
-            torch.save(test_ds, self.hparams.test_dataset_path)
+            torch.save(ds_list[0], self.hparams.train_dataset_path)
+            torch.save(ds_list[1], self.hparams.val_dataset_path)
+            torch.save(ds_list[2], self.hparams.test_dataset_path)
 
+        # load datasets only if not loaded already
+        if not os.path.exists(self.hparams.infer_dataset_path):
+            # Load metadata Crop Yield Data
+            metadata_infer = self.read_metadata(self.hparams.metadata_inference_path, train=False)
+            
+            # Load datasets from netcdf files
+            infer_ds = SITSDataset(crop_yield_data=metadata_infer,
+                                    s1_path1=self.hparams.infer_s1_path1,
+                                    s1_path2=self.hparams.infer_s1_path2,
+                                    s2_path=self.hparams.infer_s2_path,
+                                    target_variable=self.hparams.target_variable,
+                                    s1_bands=self.hparams.s1_bands,
+                                    s2_bands=self.hparams.s2_bands)
+
+            # Save datasets
+            torch.save(infer_ds, self.hparams.infer_dataset_path)
 
     def setup(self, stage: Optional[str] = None):
         """
@@ -109,13 +134,16 @@ class SITSDataModule(LightningDataModule):
         careful not to execute things like random split twice!
         """
         # self.metadata_train = self.read_metadata(self.hparams.metadata_train_path)
-        # self.metadata_test = self.read_metadata(self.hparams.metadata_test_path, train=False)
+        # self.metadata_test = self.read_metadata(self.hparams.metadata_inference_path, train=False)
 
         # load and split datasets only if not loaded already
         if not self.data_train and not self.data_val and not self.data_test:
             self.data_train = torch.load(self.hparams.train_dataset_path)
             self.data_val = torch.load(self.hparams.val_dataset_path)
             self.data_test = torch.load(self.hparams.test_dataset_path)
+
+        if not self.data_infer:
+            self.data_infer = torch.load(self.hparams.infer_dataset_path)
 
     def read_metadata(self, metadata_path, train=True):
         """Read metadata from csv file."""
@@ -181,7 +209,7 @@ class SITSDataModule(LightningDataModule):
 
     def predict_dataloader(self):
         return DataLoader(
-            dataset=self.data_test,
+            dataset=self.data_infer,
             batch_size=self.hparams.batch_size,
             num_workers=self.hparams.num_workers,
             pin_memory=self.hparams.pin_memory,
