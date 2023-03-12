@@ -32,16 +32,26 @@ class TSViT(nn.Module):
     Temporal-Spatial ViT for object classification (used in main results, section 4.3)
     """
 
-    def __init__(self):
+    def __init__(self,
+                 num_channels: int = 6,
+                 hidden_dim: int = 128,
+                 temporal_depth: int = 12,
+                 heads: int = 3,
+                 dim_head: int = 64,
+                 scale_dim: int = 2,
+                 dropout: float = 0.1,
+                 drop_last_fc: bool = False
+                ):
         super().__init__()
 
-        self.num_channels = 6
-        self.hidden_dim = 128
-        self.temporal_depth = 12
-        self.heads = 3
-        self.dim_head = 64
-        self.scale_dim = 2
-        self.dropout = 0.1
+        self.num_channels = num_channels
+        self.hidden_dim = hidden_dim
+        self.temporal_depth = temporal_depth
+        self.heads = heads
+        self.dim_head = dim_head
+        self.scale_dim = scale_dim
+        self.dropout = dropout
+        self.drop_last_fc = drop_last_fc
 
         self.embedding = nn.Sequential(
             MeanDimReduction(dims=[3, 4]),
@@ -60,29 +70,32 @@ class TSViT(nn.Module):
                                                 mlp_dim=self.hidden_dim * self.scale_dim, 
                                                 dropout=self.dropout)
 
-        self.temporal_pool = MeanDimReduction(dims=[1])
+        self.temporal_pool = MeanDimReduction(dims=[0])
         # self.temporal_pool = CLSPooling()
 
-        # Fully connected layers
-        self.fc = nn.Sequential(
-            nn.Dropout(p=self.dropout),
-            # nn.LayerNorm(self.hidden_dim),
-            nn.Linear(self.hidden_dim, 1),
-            # nn.ReLU(inplace=True),
-            # nn.Dropout(p=self.dropout),
-            # nn.BatchNorm1d(self.hidden_dim),
-            # nn.LayerNorm(64),
-            # nn.Linear(64, 1)
-        )
+        if not self.drop_last_fc:
+            # Fully connected layers
+            self.fc = nn.Sequential(
+                nn.Dropout(p=self.dropout),
+                # nn.LayerNorm(self.hidden_dim),
+                nn.Linear(self.hidden_dim, 1),
+                # nn.ReLU(inplace=True),
+                # nn.Dropout(p=self.dropout),
+                # nn.BatchNorm1d(self.hidden_dim),
+                # nn.LayerNorm(64),
+                # nn.Linear(64, 1)
+            )
 
 
     def forward(self, inputs):
         """ 
-        inputs: {'data': B x C x T x H x W, 
-                 'time': B x T}
+        inputs: {'data': B x C x T x W x H, 
+                 'time': B x T,
+                 'mask': B x T}
         """
         x = inputs['data']
-        xt = inputs['time']
+        x_time = inputs['time']
+        x_mask = inputs['mask']
 
         B, C, T, W, H = x.size()
 
@@ -90,11 +103,11 @@ class TSViT(nn.Module):
         x = self.embedding(x)
 
         # Create one-hot encoding of each time step (day of year)
-        xt = F.one_hot(xt.to(torch.int64), num_classes=365).to(torch.float32)
-        xt = xt.reshape(-1, 365)
+        x_time = F.one_hot(x_time.to(torch.int64), num_classes=365).to(torch.float32)
+        x_time = x_time.reshape(-1, 365)
 
         # Temporal positional embedding
-        pt_emb = self.temporal_positional_embedding(xt)
+        pt_emb = self.temporal_positional_embedding(x_time)
         pt_emb = pt_emb.reshape(B, T, self.hidden_dim)
         
         # Add temporal positional embedding => x: B x T x Hdim
@@ -104,12 +117,16 @@ class TSViT(nn.Module):
         cls_temporal_tokens = repeat(self.temporal_token, '() D -> b 1 D', b=B)
         x = torch.cat((cls_temporal_tokens, x), dim=1)
 
-        # Temporal Transformer
+        # Temporal Transformer => x: B x (1+T) x Hdim
         x = self.temporal_transformer(x)
 
-        # Temporal Mean Pooling => x: B x Hdim
-        x = self.temporal_pool(x)
+        # Mask out by x_mask & Temporal Mean Pooling => x: B x Hdim
+        x = torch.stack([self.temporal_pool(x[i][x_mask[i]]) for i in range(B)])
 
+        # Return Embedding if drop_last_fc
+        if self.drop_last_fc:
+            return x
+        
         # FC Regression
         x = self.fc(x)
         return x.squeeze().float()

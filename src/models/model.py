@@ -53,9 +53,6 @@ class SITSLitModule(LightningModule):
 
     def model_step(self, batch: Any):
         x, y = batch
-        # x1 = x['sentinel1'] 
-        # x2 = x['sentinel2'] 
-
         preds = self.forward(x)
         loss = self.criterion(preds, y.float())
         r2 = self.r2_score(preds, y.float())
