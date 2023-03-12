@@ -13,12 +13,34 @@ scheduler:
   factor: 0.1
   patience: 10
 
+# model:
+#   _target_: src.models.components.LSTM.LSTM
+#   num_features: 6
+#   hidden_channel: 32
+#   kernel_size: 3
+#   hidden_size1: 32
+#   hidden_size2: 32
+#   num_layers: 3
+#   dropout: 0.1
+
+# model:
+#   _target_: src.models.components.TSViT.TSViT
+#   num_channels: 6
+#   hidden_dim: 128
+#   temporal_depth: 12
+#   heads: 3
+#   dim_head: 64
+#   scale_dim: 2
+#   dropout: 0.1
+#   drop_last_fc: False
+
 model:
-  _target_: src.models.components.TSViT.TSViT
-  # num_features: 6
-  # hidden_channel: 32
-  # kernel_size: 3
-  # hidden_size1: 32
-  # hidden_size2: 32
-  # num_layers: 3
-  # dropout: 0.1
+  _target_: src.models.components.BiTSTransformer.BiTSTransformer
+  num_channels1: 6
+  num_channels2: 6
+  hidden_dim: 128
+  temporal_depth: 12
+  heads: 3
+  dim_head: 64
+  scale_dim: 2
+  dropout: 0.1

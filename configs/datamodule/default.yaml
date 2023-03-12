@@ -1,12 +1,26 @@
 _target_: src.datamodules.SITSDataModule
 data_dir: ${paths.data_dir}
 metadata_train_path: ${paths.data_dir}/Crop_Yield_Data_challenge_2.csv
-metadata_test_path: ${paths.data_dir}/Challenge_2_submission_template.csv
-data_train_path1: ${paths.data_dir}/train_sentinel1_normalized1.nc
-data_train_path2: ${paths.data_dir}/train_sentinel1_normalized2.nc
-data_test_path: ${paths.data_dir}/test_sentinel1_normalized2.nc
+metadata_inference_path: ${paths.data_dir}/Challenge_2_submission_template.csv
+
+train_s1_path1: ${paths.data_dir}/updated/train_sentinel1_16px1.nc
+train_s1_path2: ${paths.data_dir}/updated/train_sentinel1_16px2.nc
+train_s2_path: ${paths.data_dir}/updated/train_sentinel2_16px.nc
+
+infer_s1_path1: ${paths.data_dir}/updated/test_sentinel1_16px1.nc
+infer_s1_path2: ${paths.data_dir}/updated/test_sentinel1_16px2.nc
+infer_s2_path: ${paths.data_dir}/updated/test_sentinel2_16px.nc
+
+train_dataset_path: ${paths.data_dir}/dataset/train_dataset.pt
+val_dataset_path: ${paths.data_dir}/dataset/val_dataset.pt
+test_dataset_path: ${paths.data_dir}/dataset/test_dataset.pt
+infer_dataset_path: ${paths.data_dir}/dataset/infer_dataset.pt
+
+target_variable: 'RiceYield'
+s1_bands: ['vv', 'vh', 'vv_by_vh', 'vv_add_vh', 'DOP', 'RVI']
+s2_bands: ['NDVI', 'EVI', 'SAVI', 'NDWI', 'MSI', 'CARI']
+
 train_val_test_split: [0.9, 0.05, 0.05]
-bands: ["vv", "vh", "vv_by_vh", "vv_add_vh", "DOP", "RVI"]
 batch_size: 128
 num_workers: 0
 pin_memory: False
