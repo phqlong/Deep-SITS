@@ -61,8 +61,11 @@ class TSViT(nn.Module):
         
         self.temporal_token = nn.Parameter(torch.randn(1, self.hidden_dim))
 
-        self.temporal_positional_embedding = nn.Linear(365, self.hidden_dim)
-
+        # self.temporal_positional_embedding = nn.Linear(366, self.hidden_dim)
+        self.temporal_positional_embedding = nn.LSTM(366, self.hidden_dim, 
+                                                     num_layers=3, 
+                                                     batch_first=True, 
+                                                     dropout=dropout)
         self.temporal_transformer = Transformer(dim=self.hidden_dim, 
                                                 depth=self.temporal_depth, 
                                                 heads=self.heads, 
@@ -103,11 +106,11 @@ class TSViT(nn.Module):
         x = self.embedding(x)
 
         # Create one-hot encoding of each time step (day of year)
-        x_time = F.one_hot(x_time.to(torch.int64), num_classes=365).to(torch.float32)
-        x_time = x_time.reshape(-1, 365)
+        x_time = F.one_hot(x_time.to(torch.int64), num_classes=366).to(torch.float32)
+        x_time = x_time.reshape(B, T, 366)
 
         # Temporal positional embedding
-        pt_emb = self.temporal_positional_embedding(x_time)
+        pt_emb, _ = self.temporal_positional_embedding(x_time)
         pt_emb = pt_emb.reshape(B, T, self.hidden_dim)
         
         # Add temporal positional embedding => x: B x T x Hdim
