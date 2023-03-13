@@ -3,7 +3,7 @@ _target_: src.models.SITSLitModule
 optimizer:
   _target_: torch.optim.Adam
   _partial_: true
-  lr: 0.01
+  lr: 0.005
   weight_decay: 0.0
 
 scheduler:
@@ -37,7 +37,7 @@ scheduler:
 model:
   _target_: src.models.components.BiTSTransformer.BiTSTransformer
   num_channels1: 6
-  num_channels2: 6
+  num_channels2: 5
   hidden_dim: 128
   temporal_depth: 12
   heads: 3

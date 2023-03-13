@@ -18,7 +18,7 @@ infer_dataset_path: ${paths.data_dir}/dataset/infer_dataset.pt
 
 target_variable: 'RiceYield'
 s1_bands: ['vv', 'vh', 'vv_by_vh', 'vv_add_vh', 'DOP', 'RVI']
-s2_bands: ['NDVI', 'EVI', 'SAVI', 'NDWI', 'MSI', 'CARI']
+s2_bands: ['NDVI', 'SAVI', 'NDWI', 'MSI', 'CARI']
 
 train_val_test_split: [0.9, 0.05, 0.05]
 batch_size: 128
