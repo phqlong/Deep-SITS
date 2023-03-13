@@ -26,7 +26,16 @@ def create_submission(predictions: torch.Tensor, template_file_path: str, submis
     """Creates submission file from predictions.
     Args:
         predictions (Tensor): Tensor of predictions. Shape: (N, )
-    """     
+    """
+    # Join batch predictions
+    predictions = [pred for batch in predictions for pred in batch]
+
+    # Average predictions for each crop
+    predictions = [(predictions[2*i] + predictions[2*i+1])/2 for i in range(len(predictions)//2)]
+
+    # Convert to tensor
+    predictions = torch.tensor(predictions)
+    
     # Reading the submission file template
     test_file = pd.read_csv(template_file_path)
 
@@ -74,7 +83,7 @@ def inference(cfg: DictConfig) -> Tuple[dict, dict]:
     predictions = trainer.predict(model=model, datamodule=datamodule, ckpt_path=cfg.ckpt_path)
 
     # Create submission file from predictions
-    create_submission(predictions[0][:100], cfg.template_file_path, cfg.submission_dir)
+    create_submission(predictions, cfg.template_file_path, cfg.submission_dir)
 
     metric_dict = trainer.callback_metrics
 
